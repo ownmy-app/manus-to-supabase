@@ -19,11 +19,11 @@ dev = ["pytest>=8.0", "pytest-cov"]
 manus-to-supabase = "manus_to_supabase.migrate:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["manus_to_supabase"]
+packages = ["src/manus_to_supabase"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["src"]
 
 [project.urls]
-Repository = "https://github.com/ownmy-app/manus-to-supabase"
+Repository = "https://github.com/nometria/manus-to-supabase"
