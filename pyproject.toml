@@ -1,0 +1,29 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "manus-to-supabase"
+version = "0.1.0"
+description = "One-command migration for Manus AI projects: add Supabase auth and switch Drizzle from MySQL to PostgreSQL."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.10"
+keywords = ["manus", "supabase", "postgres", "migration", "auth", "drizzle"]
+dependencies = []  # zero runtime deps — pure stdlib
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-cov"]
+
+[project.scripts]
+manus-to-supabase = "manus_to_supabase.migrate:main"
+
+[tool.hatch.build.targets.wheel.sources]
+"src" = "manus_to_supabase"
+
+[tool.hatch.build.targets.wheel]
+# Include the reference/ directory in the installed package
+artifacts = ["../reference/**"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
