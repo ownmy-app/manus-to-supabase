@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "manus-to-supabase"
-version = "0.1.1"
+version = "0.1.2"
 description = "One-command migration for Manus AI projects: add Supabase auth and switch Drizzle from MySQL to PostgreSQL."
 readme = "README.md"
 license = { text = "MIT" }
