@@ -50,7 +50,7 @@ def target_root(target_dir: str | None) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# 1. Package.json: add pg + Supabase deps, remove mysql2
+# 1. Package.json: add pg + Supabase + multer deps, remove mysql2
 # ---------------------------------------------------------------------------
 
 def patch_package_json(target_root: Path) -> None:
@@ -61,7 +61,15 @@ def patch_package_json(target_root: Path) -> None:
     with open(pkg_path, "r", encoding="utf-8") as f:
         data = json.load(f)
     deps = data.get("dependencies") or {}
-    to_add = {"@supabase/supabase-js": "^2.56.1", "pg": "^8.15.0"}
+    dev_deps = data.get("devDependencies") or {}
+    # Reference bundles (forge APIs, supabase-auth, shared client) import:
+    #   multer, @supabase/supabase-js, jose, express - Manus zips sometimes omit multer.
+    # Patched db.ts imports pg. Do not add react/lucide here (template-owned versions).
+    to_add = {
+        "@supabase/supabase-js": "^2.56.1",
+        "pg": "^8.15.0",
+        "multer": "^2.0.2",
+    }
     if "jose" not in deps:
         to_add["jose"] = "6.1.0"
     changed = False
@@ -69,16 +77,25 @@ def patch_package_json(target_root: Path) -> None:
         if k not in deps or deps[k] != v:
             deps[k] = v
             changed = True
+    # Express is required by all replacement routes; only fill if absent (avoid clobbering express@5).
+    if "express" not in deps:
+        deps["express"] = "^4.21.2"
+        changed = True
+    for k, v in {"@types/multer": "^2.0.0", "@types/express": "4.17.21"}.items():
+        if k not in dev_deps or dev_deps[k] != v:
+            dev_deps[k] = v
+            changed = True
     if "mysql2" in deps:
         del deps["mysql2"]
         changed = True
     if not changed:
-        print("  [skip] package.json already has pg + Supabase deps, no mysql2")
+        print("  [skip] package.json already has Manus migration deps; no mysql2")
         return
     data["dependencies"] = deps
+    data["devDependencies"] = dev_deps
     with open(pkg_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
-    print("  [ok] package.json updated (pg, @supabase/supabase-js, jose; mysql2 removed)")
+    print("  [ok] package.json updated (pg, @supabase/supabase-js, jose, multer; mysql2 removed)")
 
 
 # ---------------------------------------------------------------------------
@@ -457,7 +474,7 @@ def transform_schema_mysql_to_pg(content: str) -> str:
             while insert_pos < len(content) and content[insert_pos] in "\n ":
                 insert_pos += 1
             content = content[:insert_pos] + "\n" + enum_block + content[insert_pos:]
-    # .onUpdateNow() doesn't exist in PG — use .$onUpdate(() => new Date())
+    # .onUpdateNow() doesn't exist in PG - use .$onUpdate(() => new Date())
     content = content.replace(".onUpdateNow()", ".$onUpdate(() => new Date())")
     # int("id").primaryKey().autoincrement() or int("id").autoincrement().primaryKey() -> serial("id").primaryKey()
     content = re.sub(
@@ -830,7 +847,7 @@ def main() -> int:
     print(f"Target project: {target}\n")
 
     steps = [
-        ("Package.json (pg, Supabase, jose; remove mysql2)", lambda: patch_package_json(target)),
+        ("Package.json (pg, Supabase, jose, multer; remove mysql2)", lambda: patch_package_json(target)),
         ("Copy Supabase/auth + forge replacement files from scripts/reference/", lambda: copy_reference_files(target)),
         ("server/_core/env.ts", lambda: patch_env_ts(target)),
         ("server/_core/index.ts", lambda: patch_server_index_ts(target)),

@@ -1,6 +1,6 @@
 # manus-to-supabase
 
-Built by the [Nometria](https://nometria.com) team. We help developers take apps built with AI tools (Lovable, Bolt, Base44, Replit) to production — handling deployment to AWS, security, scaling, and giving you full code ownership. [Learn more →](https://nometria.com)
+Built by the [Nometria](https://nometria.com) team. We help developers take apps built with AI tools (Lovable, Bolt, Base44, Replit) to production - handling deployment to AWS, security, scaling, and giving you full code ownership. [Learn more →](https://nometria.com)
 
 > One-command migration for [Manus AI](https://manus.im) projects: swap MySQL→PostgreSQL, add Supabase auth, wire everything up.
 
@@ -11,7 +11,7 @@ Built for developers who generated a project on Manus and want to self-host it w
 ## Quick start
 
 ```bash
-# Clone and install (zero runtime deps — pure stdlib)
+# Clone and install (zero runtime deps - pure stdlib)
 git clone https://github.com/nometria/manus-to-supabase
 cd manus-to-supabase
 pip install -e .
@@ -43,14 +43,14 @@ pytest tests/ -v
 
 Applies these changes to your Manus project automatically:
 
-1. **`package.json`** — adds `@supabase/supabase-js`, `pg`, `jose`; removes `mysql2`
-2. **Reference files** — copies in `Auth.tsx`, `AuthCallback.tsx`, `supabase-client.ts`, `supabase-auth.ts`, `unified-sdk.ts` from bundled templates
-3. **`server/_core/env.ts`** — adds `supabaseUrl` and `supabaseJwtSecret` env vars
-4. **`server/_core/index.ts`** — registers `registerSupabaseAuthRoutes` and `registerForgeReplacementRoutes`
-5. **`shared/db.ts`** — patches Drizzle from `mysql2` to `pg`
-6. **`client/src/App.tsx`** — adds `Auth` and `AuthCallback` route pages
-7. **`.env.example`** — appends all discovered `SUPABASE_*` env vars
-8. **Env var scan** — scans all `.ts/.tsx/.js/.jsx` files and prints required vars
+1. **`package.json`** - adds `@supabase/supabase-js`, `pg`, `jose`; removes `mysql2`
+2. **Reference files** - copies in `Auth.tsx`, `AuthCallback.tsx`, `supabase-client.ts`, `supabase-auth.ts`, `unified-sdk.ts` from bundled templates
+3. **`server/_core/env.ts`** - adds `supabaseUrl` and `supabaseJwtSecret` env vars
+4. **`server/_core/index.ts`** - registers `registerSupabaseAuthRoutes` and `registerForgeReplacementRoutes`
+5. **`shared/db.ts`** - patches Drizzle from `mysql2` to `pg`
+6. **`client/src/App.tsx`** - adds `Auth` and `AuthCallback` route pages
+7. **`.env.example`** - appends all discovered `SUPABASE_*` env vars
+8. **Env var scan** - scans all `.ts/.tsx/.js/.jsx` files and prints required vars
 
 ---
 
@@ -77,7 +77,7 @@ manus-to-supabase
 manus-to-supabase /path/to/manus-project
 ```
 
-The script is **idempotent** — safe to run multiple times.
+The script is **idempotent** - safe to run multiple times.
 
 ---
 

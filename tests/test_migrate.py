@@ -1,4 +1,4 @@
-"""Tests for manus-to-supabase migration — uses temp directories, no live project needed."""
+"""Tests for manus-to-supabase migration - uses temp directories, no live project needed."""
 import json
 import os
 import sys
@@ -31,6 +31,16 @@ def test_patch_package_json_adds_supabase_deps(tmp_path):
     data = json.loads((tmp_path / "package.json").read_text())
     assert "@supabase/supabase-js" in data["dependencies"]
     assert "pg" in data["dependencies"]
+    assert data["dependencies"]["multer"] == "^2.0.2"
+    assert data["devDependencies"]["@types/multer"] == "^2.0.0"
+    assert data["devDependencies"]["@types/express"] == "4.17.21"
+
+
+def test_patch_package_json_adds_express_if_missing(tmp_path):
+    _make_pkg(tmp_path, {"typescript": "^5.9.0"})
+    m.patch_package_json(tmp_path)
+    data = json.loads((tmp_path / "package.json").read_text())
+    assert data["dependencies"]["express"] == "^4.21.2"
 
 
 def test_patch_package_json_removes_mysql2(tmp_path):
@@ -41,7 +51,17 @@ def test_patch_package_json_removes_mysql2(tmp_path):
 
 
 def test_patch_package_json_idempotent(tmp_path):
-    _make_pkg(tmp_path, {"@supabase/supabase-js": "^2.56.1", "pg": "^8.15.0"})
+    _make_pkg(
+        tmp_path,
+        {
+            "@supabase/supabase-js": "^2.56.1",
+            "pg": "^8.15.0",
+            "jose": "6.1.0",
+            "multer": "^2.0.2",
+            "express": "^4.21.2",
+        },
+        dev_deps={"@types/multer": "^2.0.0", "@types/express": "4.17.21"},
+    )
     m.patch_package_json(tmp_path)
     m.patch_package_json(tmp_path)
     data = json.loads((tmp_path / "package.json").read_text())
@@ -50,7 +70,7 @@ def test_patch_package_json_idempotent(tmp_path):
 
 
 def test_patch_package_json_skips_missing(tmp_path):
-    # No package.json — should not raise
+    # No package.json - should not raise
     m.patch_package_json(tmp_path)
 
 
