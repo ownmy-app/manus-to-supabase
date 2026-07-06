@@ -828,11 +828,42 @@ def run_schema_test() -> int:
     return 0
 
 
+def run_schema_file(schema_path: str, out_path: str | None) -> int:
+    """Transform a single Drizzle schema.ts (MySQL → Postgres) and print or write the result.
+
+    Mirrors the in-browser transform exposed by the web tool, so the CLI and web app
+    stay in sync. With no --out, the converted schema is written to stdout.
+    """
+    src = Path(schema_path).expanduser().resolve()
+    if not src.exists():
+        print(f"Schema file not found: {src}", file=sys.stderr)
+        return 1
+    converted = transform_schema_mysql_to_pg(src.read_text(encoding="utf-8"))
+    if out_path:
+        dst = Path(out_path).expanduser().resolve()
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_text(converted, encoding="utf-8")
+        print(f"  [ok] wrote PostgreSQL schema to {dst}")
+    else:
+        sys.stdout.write(converted)
+    return 0
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Migrate Manus project to Supabase auth + PostgreSQL")
     parser.add_argument("target_dir", nargs="?", default=None, help="Target project root (default: cwd)")
     parser.add_argument("--test", action="store_true", help="Run transform on oma_scripts/schema-test.ts → schema-test-out.ts")
+    parser.add_argument(
+        "--schema-file",
+        metavar="PATH",
+        default=None,
+        help="Transform a single Drizzle schema.ts (MySQL → Postgres) and print it; pair with --out to write to a file.",
+    )
+    parser.add_argument("--out", metavar="PATH", default=None, help="Output path for --schema-file (default: stdout).")
     args = parser.parse_args()
+
+    if args.schema_file:
+        return run_schema_file(args.schema_file, args.out)
 
     if args.test:
         return run_schema_test()

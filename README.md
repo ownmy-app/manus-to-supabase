@@ -75,7 +75,17 @@ manus-to-supabase
 
 # Specify target directory
 manus-to-supabase /path/to/manus-project
+
+# Transform a single Drizzle schema.ts (MySQL -> Postgres) and print it
+manus-to-supabase --schema-file drizzle/schema.ts
+
+# ...or write the converted schema to a file
+manus-to-supabase --schema-file drizzle/schema.ts --out drizzle/schema.pg.ts
 ```
+
+`--schema-file` runs only the Drizzle rewrite (`mysqlTable`->`pgTable`, `mysqlEnum`->`pgEnum`
+with enum hoisting, `int("id")`->`serial`, dropping `authCredentials`) — the same
+transform the web tool runs in the browser, so the CLI and web app stay in sync.
 
 The script is **idempotent** - safe to run multiple times.
 

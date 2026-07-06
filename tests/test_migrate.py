@@ -124,3 +124,85 @@ def test_patch_env_ts_idempotent(tmp_path):
     # Should not duplicate
     content = (core / "env.ts").read_text()
     assert content.count("supabaseUrl") == 1
+
+
+# ---------------------------------------------------------------------------
+# transform_schema_mysql_to_pg tests (mirrors the web tool's in-browser rewrite)
+# ---------------------------------------------------------------------------
+
+def test_transform_schema_swaps_table_and_import():
+    src = (
+        'import { mysqlTable, int, varchar } from "drizzle-orm/mysql-core";\n'
+        'export const users = mysqlTable("users", { id: int("id").primaryKey().autoincrement() });\n'
+    )
+    out = m.transform_schema_mysql_to_pg(src)
+    assert "mysqlTable(" not in out
+    assert "pgTable(" in out
+    assert "drizzle-orm/pg-core" in out
+    assert "drizzle-orm/mysql-core" not in out
+
+
+def test_transform_schema_id_to_serial():
+    src = (
+        'import { mysqlTable, int } from "drizzle-orm/mysql-core";\n'
+        'export const a = mysqlTable("a", { id: int("id").primaryKey().autoincrement() });\n'
+        'export const b = mysqlTable("b", { id: int("id").primaryKey() });\n'
+        'export const c = mysqlTable("c", { count: int("count") });\n'
+    )
+    out = m.transform_schema_mysql_to_pg(src)
+    assert 'serial("id").primaryKey()' in out
+    assert 'smallserial("id").primaryKey()' in out
+    assert 'integer("count")' in out
+    assert ".autoincrement()" not in out
+
+
+def test_transform_schema_hoists_enum_and_renames_reserved():
+    src = (
+        'import { mysqlTable, mysqlEnum } from "drizzle-orm/mysql-core";\n'
+        'export const u = mysqlTable("u", {\n'
+        '  status: mysqlEnum("status", ["active", "off"]),\n'
+        '});\n'
+    )
+    out = m.transform_schema_mysql_to_pg(src)
+    # "status" is reserved -> hoisted type name becomes status_enum, usage keeps column name.
+    assert "export const statusEnum = pgEnum('status_enum', [" in out
+    assert 'statusEnum("status")' in out
+
+
+def test_transform_schema_dedupes_same_enum_name():
+    src = (
+        'import { mysqlTable, mysqlEnum } from "drizzle-orm/mysql-core";\n'
+        'export const a = mysqlTable("a", { role: mysqlEnum("role", ["x"]) });\n'
+        'export const b = mysqlTable("b", { role: mysqlEnum("role", ["y"]) });\n'
+    )
+    out = m.transform_schema_mysql_to_pg(src)
+    assert "export const roleEnum = pgEnum(" in out
+    assert "export const roleEnum2 = pgEnum(" in out
+
+
+def test_transform_schema_drops_auth_credentials():
+    src = (
+        'import { mysqlTable, int, varchar } from "drizzle-orm/mysql-core";\n'
+        'export const authCredentials = mysqlTable("authCredentials", { id: int("id").primaryKey() });\n'
+        'export type AuthCredential = typeof authCredentials.$inferSelect;\n'
+        'export type InsertAuthCredential = typeof authCredentials.$inferInsert;\n'
+        'export const users = mysqlTable("users", { id: int("id").primaryKey().autoincrement() });\n'
+    )
+    out = m.transform_schema_mysql_to_pg(src)
+    assert "authCredentials" not in out
+    assert "InsertAuthCredential" not in out
+    assert "users" in out
+
+
+def test_run_schema_file_to_out(tmp_path):
+    src = tmp_path / "schema.ts"
+    src.write_text(
+        'import { mysqlTable, int } from "drizzle-orm/mysql-core";\n'
+        'export const a = mysqlTable("a", { id: int("id").primaryKey().autoincrement() });\n'
+    )
+    out = tmp_path / "schema.pg.ts"
+    rc = m.run_schema_file(str(src), str(out))
+    assert rc == 0
+    text = out.read_text()
+    assert "pgTable(" in text
+    assert 'serial("id").primaryKey()' in text
